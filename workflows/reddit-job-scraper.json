@@ -1,0 +1,530 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "cb8435c2-6a6e-44e6-93a6-cbab9a50f095",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.reddit.com/search.rss?q=n8n+hiring+OR+freelance+OR+job&sort=new",
+        "options": {}
+      },
+      "id": "088be9f2-47db-429a-aa2a-b3501479335f",
+      "name": "Reddit RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        304
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "bb73c449-e253-4ab5-858a-ebc78f0542fc",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "93672758-9252-470d-ab71-1d8fc4209396",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        368,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Evaluate if the following Reddit post is a job offer or a service request from an agency/individual looking for an AI/automation expert. Return true if yes. Return false if it is just a discussion, a tutorial, or someone offering their own services.\\n\\nTitle: {{ $json.title }}\\nContent: {{ $json.content }}\\n\\nRépond en français.",
+        "hasOutputParser": true
+      },
+      "id": "8ffa3ca0-78e2-4b12-a402-49f8b0c6b3e8",
+      "name": "Classify Job Offer (OpenRouter)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        576,
+        320
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b:free",
+        "options": {}
+      },
+      "id": "b65ee2fd-2ae1-462a-b373-2751a9e6cc22",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        816,
+        608
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "S5yOqhLEVrWLHr9H",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"is_job\": true, \"summary\": \"brief summary\" }"
+      },
+      "id": "040fcf2b-0823-464d-be6b-2377842c4527",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "53f89024-adda-4428-946c-f40346d1d264",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        320
+      ],
+      "webhookId": "79e642d7-b527-431b-8cd6-729c2e2e1f38"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.output.is_job }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d9abe9df-fc48-432b-9c7c-512d0c97c062",
+      "name": "Is Job Offer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu représentes Hippolyte Donfack, un Architecte SecOps et expert en automatisation n8n de haut niveau.\nAnalyse le post Reddit suivant (offre de freelance/emploi).\n\nTa mission est de rédiger un message d'approche ultra-ciblé et de définir la méthode de contact.\nCONSIGNES STRICTES :\n1. \"contact_method\" : Choisis \"Message Privé\" ou \"Commentaire\" en fonction de ce qui est demandé dans le post.\n2. \"draft_message\" : Rédige la candidature dans la même langue que le post Reddit (Français ou Anglais). Adapte tes arguments au problème spécifique soulevé par le client.\n3. Démarque-toi en expliquant ta double expertise rare : Cybersécurité et Automatisation avancée (n8n, intégration d'API, Agents IA).\n4. Précise que tu ne crées pas des \"boîtes noires\" invisibles : tu développes de véritables interfaces web branchées à n8n pour que le client puisse interagir simplement avec ses workflows.\n5. Insiste sur le fait que tu privilégies l'approche \"Human in the loop\" (l'humain valide toujours l'action finale de l'IA) pour garantir une fiabilité et une sécurité totales.\n6. Glisse ton portfolio de manière fluide et naturelle comme preuve de ton exigence (branding Premium / Dark mode) : https://offenssiveskills-jpg.github.io/\n7. Sois direct, orienté \"solution\", professionnel mais pas trop formel (le style Reddit exige d'aller droit au but).\n\nTitre du post: {{ $node[\"Loop Over Items\"].json.title }}\nContenu: {{ $node[\"Loop Over Items\"].json.content }}\n",
+        "hasOutputParser": true
+      },
+      "id": "ef924b61-9655-4bdd-9f19-db972d49b879",
+      "name": "Draft Application (OpenRouter)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1328,
+        304
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"contact_method\": \"Message Privé\", \"draft_message\": \"Hello I am an expert...\" }"
+      },
+      "id": "b43ac514-c3e5-47a2-b56c-143d7bd5f930",
+      "name": "Structured Output Parser (Draft)",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1616,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "Date",
+              "type": "string",
+              "value": "={{ $now }}"
+            },
+            {
+              "id": "2",
+              "name": "Titre",
+              "type": "string",
+              "value": "={{ $node[\"Loop Over Items\"].json.title }}"
+            },
+            {
+              "id": "3",
+              "name": "Link",
+              "type": "string",
+              "value": "={{ $node[\"Loop Over Items\"].json.link }}"
+            },
+            {
+              "id": "4",
+              "name": "Summary",
+              "type": "string",
+              "value": "={{ $node[\"Classify Job Offer (OpenRouter)\"].json.output.summary }}"
+            },
+            {
+              "id": "5",
+              "name": "ContactMethod",
+              "type": "string",
+              "value": "={{ $json.output.contact_method }}"
+            },
+            {
+              "id": "6",
+              "name": "ApplicationDraft",
+              "type": "string",
+              "value": "={{ $json.output.draft_message }}"
+            },
+            {
+              "id": "7",
+              "name": "Status",
+              "type": "string",
+              "value": "À postuler"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e34acac8-4221-4bd6-a0d5-9d3565d04866",
+      "name": "Format Data for Sheets",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1YVQf5l3s7x87xURBnhtKKUQmTKEoNa8_M6GlioJDbKQ",
+          "mode": "list",
+          "cachedResultName": "Reddit Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YVQf5l3s7x87xURBnhtKKUQmTKEoNa8_M6GlioJDbKQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1919610230,
+          "mode": "list",
+          "cachedResultName": "Proposition",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YVQf5l3s7x87xURBnhtKKUQmTKEoNa8_M6GlioJDbKQ/edit#gid=1919610230"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Titre": "={{ $json.Titre }}",
+            "Link": "={{ $json.Link }}",
+            "Summary": "={{ $json.Summary }}",
+            "ContactMethod": "={{ $json.ContactMethod }}",
+            "ApplicationDraft": "={{ $json.ApplicationDraft }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Titre",
+              "displayName": "Titre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ContactMethod",
+              "displayName": "ContactMethod",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ApplicationDraft",
+              "displayName": "ApplicationDraft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d8d008d5-bd13-47a5-8a2c-291afeb77d09",
+      "name": "Google Sheets (Save Job)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1824,
+        400
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "53cdROzedZH4S8cp",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reddit RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit RSS": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reddit RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Classify Job Offer (OpenRouter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Job Offer (OpenRouter)": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Job Offer (OpenRouter)",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Draft Application (OpenRouter)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Classify Job Offer (OpenRouter)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Is Job Offer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Job Offer?": {
+      "main": [
+        [
+          {
+            "node": "Draft Application (OpenRouter)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Application (OpenRouter)": {
+      "main": [
+        [
+          {
+            "node": "Format Data for Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser (Draft)": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Draft Application (OpenRouter)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data for Sheets": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets (Save Job)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets (Save Job)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "54c44cb1cb0fd024db0059a7ca6136f763be5898a5fb2643d7ec724e9b58a7f9"
+  }
+}
